@@ -10,24 +10,24 @@ load_dotenv()
 DATA_DIR = Path(__file__).parent.parent / "data"
 
 SERIES_IDS = {
-    "gdp_growth": "A191RL1Q225SBEA",
-    "cpi": "CPIAUCSL",
-    "unemployment": "UNRATE",
-    "fed_funds": "FEDFUNDS",
+    "unemployment": "UNRATE",           # Overall unemployment rate
+    "college_grad": "LNS14027662",      # Unemployment: BA+, 25 yrs+
+    "youth": "LNS14000036",             # Unemployment: 20-24 yrs (entry-level proxy)
+    "job_openings": "JTSJOL",           # Total job openings (JOLTS, thousands)
 }
 
 LABELS = {
-    "gdp_growth": "GDP Growth Rate",
-    "cpi": "CPI Inflation Index",
-    "unemployment": "Unemployment Rate",
-    "fed_funds": "Federal Funds Rate",
+    "unemployment": "Overall Unemployment",
+    "college_grad": "College Grad Unemployment (BA+, 25+)",
+    "youth": "Youth Unemployment (Age 20–24)",
+    "job_openings": "Total Job Openings",
 }
 
 UNITS = {
-    "gdp_growth": "%",
-    "cpi": "Index",
     "unemployment": "%",
-    "fed_funds": "%",
+    "college_grad": "%",
+    "youth": "%",
+    "job_openings": "K",   # raw FRED values are in thousands
 }
 
 START_DATE = "2000-01-01"
@@ -35,6 +35,12 @@ START_DATE = "2000-01-01"
 
 def _get_fred() -> Fred:
     api_key = os.getenv("FRED_API_KEY")
+    if not api_key:
+        try:
+            import streamlit as st
+            api_key = st.secrets.get("FRED_API_KEY")
+        except Exception:
+            pass
     if not api_key:
         raise ValueError(
             "FRED_API_KEY not set. Create a .env file with FRED_API_KEY=your_key_here. "
