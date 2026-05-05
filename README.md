@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # US Economic Dashboard
 
 A clean, interactive Streamlit dashboard for key US macroeconomic indicators, powered by the [FRED API](https://fred.stlouisfed.org/) (Federal Reserve Economic Data) and Plotly.
@@ -113,4 +113,4 @@ Click **Refresh Data** in the sidebar to clear the cache and re-fetch from FRED.
 - NBER recession dates are hardcoded (they are historical facts that rarely change).
 =======
 # US-Economy-Dashboard
->>>>>>> 50e6f2c2183e05e4af8c05af50ce04a716eed87c
+
