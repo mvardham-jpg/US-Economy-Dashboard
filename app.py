@@ -18,7 +18,7 @@ from src.fetch import LABELS, UNITS, fetch_all
 
 st.set_page_config(
     page_title="Grad Job Market Dashboard",
-    page_icon="🎓",
+    page_icon=None,
     layout="wide",
 )
 
@@ -59,8 +59,8 @@ st.markdown("""
 
 # ── Sidebar ────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## 🎓 Dashboard")
-    if st.button("🔄 Refresh Data", use_container_width=True):
+    st.markdown("## Dashboard")
+    if st.button("Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
     st.markdown("---")
@@ -85,13 +85,13 @@ def load_data() -> dict:
     return fetch_all()
 
 
-st.title("🎓 College Grads & Entry-Level Job Market")
+st.title("College Grads & Entry-Level Job Market")
 st.markdown(
     "Is now a good time to graduate? How do recessions hit young workers? "
     "Explore 25 years of labor market data from **[FRED](https://fred.stlouisfed.org)**."
 )
 
-with st.spinner("Loading labor market data…"):
+with st.spinner("Loading labor market data..."):
     try:
         data = load_data()
     except ValueError as exc:
@@ -124,35 +124,35 @@ current_college = data["college_grad"]["value"].iloc[-1]
 current_youth = data["youth"]["value"].iloc[-1]
 
 if current_unemp < 4.5:
-    health_cls, health_emoji, health_msg = (
-        "health-good", "🟢",
-        f"Strong market — overall unemployment is {current_unemp:.1f}%, "
-        f"college grads sit at just {current_college:.1f}%."
+    health_cls, health_label, health_msg = (
+        "health-good", "Strong market",
+        f"Overall unemployment is {current_unemp:.1f}%, "
+        f"and college grads are sitting at {current_college:.1f}%."
     )
 elif current_unemp < 6.5:
-    health_cls, health_emoji, health_msg = (
-        "health-warn", "🟡",
-        f"Mixed conditions — unemployment at {current_unemp:.1f}%. "
-        f"College grads fare better at {current_college:.1f}%."
+    health_cls, health_label, health_msg = (
+        "health-warn", "Mixed conditions",
+        f"Unemployment is at {current_unemp:.1f}%. "
+        f"College grads are faring better at {current_college:.1f}%."
     )
 else:
-    health_cls, health_emoji, health_msg = (
-        "health-bad", "🔴",
-        f"Tough market — unemployment at {current_unemp:.1f}%. "
-        f"College grads at {current_college:.1f}%."
+    health_cls, health_label, health_msg = (
+        "health-bad", "Tough market",
+        f"Unemployment is elevated at {current_unemp:.1f}%. "
+        f"College grads are at {current_college:.1f}%."
     )
 
 st.markdown(
-    f'<div class="{health_cls}"><b>{health_emoji} Market Health:</b> {health_msg}</div>',
+    f'<div class="{health_cls}"><b>{health_label}:</b> {health_msg}</div>',
     unsafe_allow_html=True,
 )
 
 # ── Tabs ───────────────────────────────────────────────────────────────────
 tab_overview, tab_cohort, tab_deep, tab_compare = st.tabs([
-    "📊 Overview",
-    "🎓 Your Graduation Year",
-    "🔍 Deep Dive",
-    "📈 Compare",
+    "Overview",
+    "Your Graduation Year",
+    "Deep Dive",
+    "Compare",
 ])
 
 
@@ -161,7 +161,6 @@ tab_overview, tab_cohort, tab_deep, tab_compare = st.tabs([
 # ══════════════════════════════════════════════════════════════════════════
 with tab_overview:
 
-    # KPI cards with year-over-year delta
     CARD_COLORS = {
         "unemployment": "#455A64",
         "college_grad": "#1565C0",
@@ -187,12 +186,12 @@ with tab_overview:
 
         if override_unit == "M":
             display = f"{val / 1_000:.1f}M"
-            delta_str = f"{'▲' if delta > 0 else '▼'} {abs(delta)/1_000:.1f}M vs last year"
+            delta_str = f"{'up' if delta > 0 else 'down'} {abs(delta)/1_000:.1f}M vs last year"
             sub = f"job openings · {date_str}"
         else:
             display = f"{val:.1f}%"
-            arrow = "▲" if delta > 0 else "▼"
-            delta_str = f"{arrow} {abs(delta):.1f} pp vs last year"
+            direction = "up" if delta > 0 else "down"
+            delta_str = f"{direction} {abs(delta):.1f} pp vs last year"
             sub = f"unemployment · {date_str}"
 
         with col:
@@ -206,25 +205,22 @@ with tab_overview:
                 unsafe_allow_html=True,
             )
 
-    # Degree premium insight
     premium = gap_df["value"].iloc[-1]
+    note = "That's a meaningful cushion." if premium > 2 else "The gap has narrowed — a degree is offering less protection than usual."
     st.markdown(
-        f'<div class="insight-box" style="margin-top:14px;">📌 <b>Degree Premium:</b> '
-        f'Right now, college grads experience unemployment rates '
-        f'<b>{premium:.1f} percentage points lower</b> than the general workforce. '
-        f'{"That\'s a strong advantage." if premium > 2 else "The gap has narrowed — a degree helps less than usual."}'
+        f'<div class="insight-box" style="margin-top:14px;"><b>Degree premium:</b> '
+        f'College grads currently face unemployment rates '
+        f'<b>{premium:.1f} percentage points lower</b> than the broader workforce. {note}'
         f'</div>',
         unsafe_allow_html=True,
     )
 
-    # Main comparison chart with event annotations
     st.markdown('<div class="section-title">Unemployment by Group (2000–Present)</div>', unsafe_allow_html=True)
 
     fig = unemployment_comparison_chart(
         data["unemployment"], data["college_grad"], data["youth"]
     )
 
-    # Annotate key events
     events = [
         ("2008-09-15", "2008\nFinancial\nCrisis", "#C62828"),
         ("2020-03-01", "COVID-19", "#C62828"),
@@ -253,19 +249,17 @@ with tab_cohort:
     grad_year = st.slider(
         "Graduation Year", min_value=2000, max_value=2024, value=2020, step=1
     )
-    grad_date = f"{grad_year}-06-01"  # assume June graduation
+    grad_date = f"{grad_year}-06-01"
 
-    # Fetch unemployment values at grad year
     def get_val_at(df: pd.DataFrame, date_str: str) -> tuple[float, str]:
         target = pd.to_datetime(date_str)
         idx = df.index.get_indexer([target], method="nearest")[0]
         return df["value"].iloc[idx], df.index[idx].strftime("%b %Y")
 
-    un_then, un_date  = get_val_at(data["unemployment"], grad_date)
-    cg_then, _        = get_val_at(data["college_grad"], grad_date)
-    yt_then, _        = get_val_at(data["youth"], grad_date)
+    un_then, un_date = get_val_at(data["unemployment"], grad_date)
+    cg_then, _       = get_val_at(data["college_grad"], grad_date)
+    yt_then, _       = get_val_at(data["youth"], grad_date)
 
-    # Job openings (JOLTS starts Dec 2000)
     jo_df = data["job_openings"]
     jo_available = pd.to_datetime(grad_date) >= jo_df.index[0]
     if jo_available:
@@ -274,7 +268,6 @@ with tab_cohort:
     else:
         jo_then = None
 
-    # Recession check
     RECESSION_PERIODS = [
         (2001, 3, 2001, 11, "Dot-com bust"),
         (2007, 12, 2009, 6,  "Great Financial Crisis"),
@@ -286,39 +279,37 @@ with tab_cohort:
             recession_label = name
             break
 
-    # Market assessment at grad time
     if recession_label:
-        grad_emoji, grad_verdict = "😬", f"You graduated smack into the **{recession_label}**."
+        grad_verdict = f"You graduated during the **{recession_label}**. One of the harder times to enter the workforce."
     elif un_then < 4.5:
-        grad_emoji, grad_verdict = "🔥", "You graduated into a **hot job market**. Lucky!"
+        grad_verdict = "You graduated into a strong job market. Employers were actively hiring."
     elif un_then < 6.0:
-        grad_emoji, grad_verdict = "🙂", "You graduated into a **decent market** — not bad."
+        grad_verdict = "Conditions were reasonably solid when you graduated — not booming, but not rough either."
     else:
-        grad_emoji, grad_verdict = "😤", "Rough timing — you faced a **tough job market**."
+        grad_verdict = "The market was soft when you graduated. Finding work took real effort for most new grads."
 
-    # Display cohort card
-    jo_str = f"{jo_then:.1f}M" if jo_then else "N/A (pre-JOLTS)"
+    jo_str = f"{jo_then:.1f}M" if jo_then else "N/A (pre-JOLTS data)"
     st.markdown(
         f'<div class="cohort-card">'
-        f'<h3>{grad_emoji} Class of {grad_year}</h3>'
+        f'<h3>Class of {grad_year}</h3>'
         f'{grad_verdict}<br><br>'
         f'<table style="width:100%;font-size:0.9rem;">'
         f'<tr><th style="text-align:left;">Indicator</th>'
-        f'    <th style="text-align:center;">When You Graduated ({un_date})</th>'
+        f'    <th style="text-align:center;">When you graduated ({un_date})</th>'
         f'    <th style="text-align:center;">Today</th>'
         f'    <th style="text-align:center;">Change</th></tr>'
         f'<tr><td>Overall Unemployment</td>'
         f'    <td style="text-align:center;">{un_then:.1f}%</td>'
         f'    <td style="text-align:center;">{current_unemp:.1f}%</td>'
-        f'    <td style="text-align:center;">{"▲" if current_unemp > un_then else "▼"} {abs(current_unemp - un_then):.1f} pp</td></tr>'
+        f'    <td style="text-align:center;">{"up" if current_unemp > un_then else "down"} {abs(current_unemp - un_then):.1f} pp</td></tr>'
         f'<tr><td>College Grad Unemployment</td>'
         f'    <td style="text-align:center;">{cg_then:.1f}%</td>'
         f'    <td style="text-align:center;">{current_college:.1f}%</td>'
-        f'    <td style="text-align:center;">{"▲" if current_college > cg_then else "▼"} {abs(current_college - cg_then):.1f} pp</td></tr>'
+        f'    <td style="text-align:center;">{"up" if current_college > cg_then else "down"} {abs(current_college - cg_then):.1f} pp</td></tr>'
         f'<tr><td>Youth Unemployment (20–24)</td>'
         f'    <td style="text-align:center;">{yt_then:.1f}%</td>'
         f'    <td style="text-align:center;">{current_youth:.1f}%</td>'
-        f'    <td style="text-align:center;">{"▲" if current_youth > yt_then else "▼"} {abs(current_youth - yt_then):.1f} pp</td></tr>'
+        f'    <td style="text-align:center;">{"up" if current_youth > yt_then else "down"} {abs(current_youth - yt_then):.1f} pp</td></tr>'
         f'<tr><td>Job Openings</td>'
         f'    <td style="text-align:center;">{jo_str}</td>'
         f'    <td style="text-align:center;">{data["job_openings"]["value"].iloc[-1]/1_000:.1f}M</td>'
@@ -327,7 +318,6 @@ with tab_cohort:
         unsafe_allow_html=True,
     )
 
-    # Chart with grad year marked
     st.markdown("<br>", unsafe_allow_html=True)
     fig2 = unemployment_comparison_chart(
         data["unemployment"], data["college_grad"], data["youth"]
@@ -339,7 +329,6 @@ with tab_cohort:
         annotation_font_size=11,
         annotation_font_color="#F57F17",
     )
-    # Annotate key events too
     for date, label, color in [
         ("2008-09-15", "Financial\nCrisis", "#C62828"),
         ("2020-03-01", "COVID-19", "#C62828"),
@@ -351,14 +340,13 @@ with tab_cohort:
         )
     st.plotly_chart(fig2, use_container_width=True)
 
-    # Fun extra: how many months to recover from their grad period
     if recession_label:
         recession_ends = {"Dot-com bust": 2003, "Great Financial Crisis": 2011, "COVID-19 recession": 2022}
         recovery_year = recession_ends.get(recession_label)
         if recovery_year:
             st.info(
-                f"📅 After the {recession_label}, the college grad unemployment rate didn't fully normalize "
-                f"until around **{recovery_year}** — about **{(recovery_year - grad_year)} years** after graduation."
+                f"After the {recession_label}, college grad unemployment didn't fully normalize "
+                f"until around **{recovery_year}** — roughly **{recovery_year - grad_year} years** after you would have graduated."
             )
 
 
@@ -371,18 +359,17 @@ with tab_deep:
     c1, c2 = st.columns(2)
     with c1:
         st.markdown('<div class="section-title">Job Openings (JOLTS)</div>', unsafe_allow_html=True)
-        st.caption("Total nonfarm job openings — a proxy for how hungry employers are for workers.")
+        st.caption("Total nonfarm job openings — a measure of how actively employers are hiring.")
         st.plotly_chart(job_openings_chart(data["job_openings"]), use_container_width=True)
 
     with c2:
         st.markdown('<div class="section-title">Degree Premium</div>', unsafe_allow_html=True)
         st.caption(
-            "How many percentage points lower college grad unemployment is vs the overall rate. "
-            "Higher = stronger protection from a degree."
+            "How many percentage points lower college grad unemployment is relative to the overall rate. "
+            "A higher value means a degree offers stronger protection."
         )
         st.plotly_chart(degree_premium_chart(gap_df), use_container_width=True)
 
-    # Stats callout
     max_premium = gap_df["value"].max()
     max_premium_date = gap_df["value"].idxmax().strftime("%b %Y")
     min_premium = gap_df["value"].min()
@@ -392,15 +379,14 @@ with tab_deep:
     with sc1:
         st.metric("Current Degree Premium", f"{gap_df['value'].iloc[-1]:.1f} pp")
     with sc2:
-        st.metric("Peak Premium (most valuable)", f"{max_premium:.1f} pp", f"{max_premium_date}")
+        st.metric("Strongest Premium", f"{max_premium:.1f} pp", max_premium_date)
     with sc3:
-        st.metric("Weakest Premium", f"{min_premium:.1f} pp", f"{min_premium_date}")
+        st.metric("Weakest Premium", f"{min_premium:.1f} pp", min_premium_date)
 
     st.markdown("---")
 
-    # Animated scatter: youth vs college grad unemployment month by month
-    st.markdown('<div class="section-title">Youth vs. College Grad Unemployment — Scatter</div>', unsafe_allow_html=True)
-    st.caption("Each dot is one month. X = college grad unemployment, Y = youth (20–24) unemployment. Recessions cluster upper-right.")
+    st.markdown('<div class="section-title">Youth vs. College Grad Unemployment</div>', unsafe_allow_html=True)
+    st.caption("Each dot is one month of data. The further upper-right, the harder the market. Color indicates the year.")
 
     common_idx = data["college_grad"].index.intersection(data["youth"].index)
     scatter_df = pd.DataFrame({
@@ -469,17 +455,16 @@ with tab_compare:
         use_container_width=True,
     )
 
-    # Fun stat
     corr = (
         data[key1]["value"]
         .reindex(data[key2].index, method="nearest")
         .corr(data[key2]["value"])
     )
-    direction = "move together" if corr > 0 else "move in opposite directions"
+    direction = "tend to move together" if corr > 0 else "tend to move in opposite directions"
     strength = "strongly" if abs(corr) > 0.7 else ("somewhat" if abs(corr) > 0.4 else "weakly")
     st.info(
-        f"📐 **Correlation:** {LABELS[key1]} and {LABELS[key2]} {strength} {direction} "
-        f"(r = {corr:.2f})."
+        f"**Correlation:** {LABELS[key1]} and {LABELS[key2]} {strength} {direction} "
+        f"over this period (r = {corr:.2f})."
     )
 
 
